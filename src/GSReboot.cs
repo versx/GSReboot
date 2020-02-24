@@ -30,12 +30,7 @@
         /// <summary>
         /// List of hostnames or IP addresses.
         /// </summary>
-        public List<string> Hosts { get; }
-
-        /// <summary>
-        /// Admin password to access phones.
-        /// </summary>
-        public string Password { get; set; }
+        public List<DeviceConfig> Hosts { get; }
 
         /// <summary>
         /// Log errors.
@@ -48,16 +43,16 @@
 
         public GSReboot()
         {
-            Hosts = new List<string>();
+            Hosts = new List<DeviceConfig>();
             _phoneErrorList = new List<string>();
 			_stopwatch = new Stopwatch();
         }
 
-        public GSReboot(List<string> hosts, string password)
+        public GSReboot(List<DeviceConfig> hosts, bool logErrors)
             : this()
         {
             Hosts = hosts;
-            Password = password;
+            LogErrors = logErrors;
         }
 
         #endregion
@@ -81,9 +76,9 @@
                 if (_cancel) break;
 
                 var host = Hosts[i];
-                Log(ConsoleColor.White, false, "Rebooting VoIP phone {0}...", host);
+                Log(ConsoleColor.White, false, "Rebooting VoIP phone {0}...", host.Host);
 
-                var result = DownloadString(string.Format(RebootRequestUri, host, Password));
+                var result = DownloadString(string.Format(RebootRequestUri, host.Host, host.Password));
                 /**Available responses:
                  * var success = "{\"response\":\"success\", \"body\": \"savereboot\"}"
                  * var failed = "{\"response\":\"error\", \"body\": \"unknown\"}"
@@ -91,7 +86,8 @@
                 if (string.IsNullOrEmpty(result) || result.Contains("error"))
                 {
                     _failed++;
-                    _phoneErrorList.Add(host);
+                    //_phoneErrorList.Add(host.Note ?? host.Host);
+                    _phoneErrorList.Add(host.Host);
                     Log(ConsoleColor.Red, true, " [ERR]");
                 }
                 else
